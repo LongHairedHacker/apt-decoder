@@ -1,0 +1,14 @@
+[root]
+name = "apt-decoder"
+version = "0.1.0"
+dependencies = [
+ "hound 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "hound"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[metadata]
+"checksum hound 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1e971fe26207d3ccdc66806fd9154508b28101fccb53fe152695e3ebcb53bd0f"
