@@ -5,18 +5,20 @@ mod sinegen;
 mod firfilter;
 mod resamplers;
 mod mixer;
+mod amdemod;
 
 use utils::float_sample_iterator;
 use sinegen::SineGenerator;
 use firfilter::FIRFilter;
 use mixer::Mixer;
+use amdemod::SquaringAMDemodulator;
 
 
 fn main() {
     let carrier_freq = 2400.0;
     let sample_freq = 48000.0;
 
-    let mut reader = match hound::WavReader::open("noaa19_short.wav") {
+    let mut reader = match hound::WavReader::open("noaa19_20160814_mono.wav") {
         Err(e) => panic!("Could not open inputfile: {}", e),
         Ok(r) => r
     };
@@ -27,6 +29,8 @@ fn main() {
 
     let sample_rate = reader.spec().sample_rate;
     println!("Samplerate: {}", sample_rate);
+
+    println!("{} Samples", reader.len());
 
     let samples = float_sample_iterator(&mut reader);
 
@@ -95,10 +99,8 @@ fn main() {
         -7.383784e-03];
 
 
-
-    let sine_gen = SineGenerator::new(carrier_freq, 1.0, sample_freq);
-    let mixer = Mixer::from(sine_gen, samples);
-    let filter = FIRFilter::from(mixer, coeffs);
+    let demod = SquaringAMDemodulator::from(samples);
+    let filter = FIRFilter::from(demod, coeffs);
 
     let spec = hound::WavSpec {
         channels: 1,
