@@ -1,4 +1,5 @@
 extern crate hound;
+extern crate image;
 
 mod utils;
 mod sinegen;
@@ -7,17 +8,18 @@ mod resamplers;
 mod mixer;
 mod amdemod;
 
-use utils::float_sample_iterator;
-use sinegen::SineGenerator;
-use firfilter::FIRFilter;
-use mixer::Mixer;
-use amdemod::SquaringAMDemodulator;
+use std::fs::File;
+use std::path::Path;
 
+use utils::float_sample_iterator;
+use firfilter::FIRFilter;
+use amdemod::SquaringAMDemodulator;
+use resamplers::{Upsampler, Downsampler};
+
+const LINES_PER_SECOND: u32 = 2;
+const PIXELS_PER_LINE: u32 = 2080;
 
 fn main() {
-    let carrier_freq = 2400.0;
-    let sample_freq = 48000.0;
-
     let mut reader = match hound::WavReader::open("noaa19_20160814_mono.wav") {
         Err(e) => panic!("Could not open inputfile: {}", e),
         Ok(r) => r
@@ -29,8 +31,19 @@ fn main() {
 
     let sample_rate = reader.spec().sample_rate;
     println!("Samplerate: {}", sample_rate);
+    if sample_rate != 48000 {
+        panic!("Expected a 48kHz sample rate");
+    }
 
     println!("{} Samples", reader.len());
+
+    let seconds = (reader.len() as f32) / (sample_rate as f32);
+    let lines = (seconds.ceil() as u32) * LINES_PER_SECOND;
+    println!("{} or {} lines", seconds, lines);
+
+    let mut img = image::ImageBuffer::new(PIXELS_PER_LINE, lines);
+
+
 
     let samples = float_sample_iterator(&mut reader);
 
@@ -101,20 +114,27 @@ fn main() {
 
     let demod = SquaringAMDemodulator::from(samples);
     let filter = FIRFilter::from(demod, coeffs);
+    let upsampler = Upsampler::from(filter, 13);
+    let downsampler = Downsampler::from(upsampler, 150);
 
-    let spec = hound::WavSpec {
-        channels: 1,
-        sample_rate: 48000,
-        bits_per_sample: 32,
-        sample_format: hound::SampleFormat::Int,
-    };
-    let mut writer = hound::WavWriter::create("demod.wav", spec).unwrap();
+    let mut x = 0;
+    let mut y = 0;
+    let mut max_level = 0.0;
+    for sample in downsampler {
+        max_level = f32::max(sample, max_level);
+        let color = (sample / max_level * 255.0) as u8;
 
+        println!("{}", color);
 
-    for sample in filter {
-        //println!("{}", sample);
+        img.put_pixel(x,y,image::Luma([color]));
 
-        let amplitude = (i32::max_value() as f32) * 0.8; //About 1dB headroom
-        writer.write_sample((sample * amplitude) as i32).unwrap();
+        x += 1;
+        if x > PIXELS_PER_LINE {
+            x = 0;
+            y += 1;
+        }
     }
+
+    let ref mut fout = File::create(&Path::new("decoded.png")).unwrap();
+    image::ImageLuma8(img).save(fout, image::PNG).unwrap();
 }

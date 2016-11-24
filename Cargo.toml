@@ -4,4 +4,5 @@ version = "0.1.0"
 authors = ["LongHairedHacker <sebastian@sebastians-site.de>"]
 
 [dependencies]
-hound = "2.0.0"
+hound = "*"
+image = "*"
