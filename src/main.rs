@@ -7,6 +7,7 @@ mod firfilter;
 mod resamplers;
 mod mixer;
 mod amdemod;
+mod aptsyncer;
 
 use std::fs::File;
 use std::path::Path;
@@ -15,6 +16,7 @@ use utils::float_sample_iterator;
 use firfilter::FIRFilter;
 use amdemod::SquaringAMDemodulator;
 use resamplers::{Upsampler, Downsampler};
+use aptsyncer::{APTSyncer, SyncedSample};
 
 const LINES_PER_SECOND: u32 = 2;
 const PIXELS_PER_LINE: u32 = 2080;
@@ -116,20 +118,36 @@ fn main() {
     let filter = FIRFilter::from(demod, coeffs);
     let upsampler = Upsampler::from(filter, 13);
     let downsampler = Downsampler::from(upsampler, 150);
+    let syncer = APTSyncer::from(downsampler);
 
     let mut x = 0;
     let mut y = 0;
     let mut max_level = 0.0;
-    for sample in downsampler {
+
+    for synced_sample in syncer {
+        let sample = match synced_sample {
+            SyncedSample::Sample(s) => s,
+            SyncedSample::SyncA(s) =>{
+                x = 0;
+                s
+            }
+            SyncedSample::SyncB(s) =>{
+                x = PIXELS_PER_LINE / 2;
+                s
+            }
+        };
+
         max_level = f32::max(sample, max_level);
         let color = (sample / max_level * 255.0) as u8;
 
-        println!("{}", color);
+        //println!("{}", color);
 
-        img.put_pixel(x,y,image::Luma([color]));
+        if y < lines {
+            img.put_pixel(x,y,image::Luma([color]));
+        }
 
         x += 1;
-        if x > PIXELS_PER_LINE {
+        if x >= PIXELS_PER_LINE {
             x = 0;
             y += 1;
         }
