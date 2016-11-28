@@ -2,10 +2,8 @@ extern crate hound;
 extern crate image;
 
 mod utils;
-mod sinegen;
 mod firfilter;
 mod resamplers;
-mod mixer;
 mod amdemod;
 mod aptsyncer;
 
@@ -21,35 +19,7 @@ use aptsyncer::{APTSyncer, SyncedSample};
 const LINES_PER_SECOND: u32 = 2;
 const PIXELS_PER_LINE: u32 = 2080;
 
-fn main() {
-    let mut reader = match hound::WavReader::open("noaa19_20160814_mono.wav") {
-        Err(e) => panic!("Could not open inputfile: {}", e),
-        Ok(r) => r
-    };
-
-    if reader.spec().channels != 1 {
-        panic!("Expected a mono file");
-    }
-
-    let sample_rate = reader.spec().sample_rate;
-    println!("Samplerate: {}", sample_rate);
-    if sample_rate != 48000 {
-        panic!("Expected a 48kHz sample rate");
-    }
-
-    println!("{} Samples", reader.len());
-
-    let seconds = (reader.len() as f32) / (sample_rate as f32);
-    let lines = (seconds.ceil() as u32) * LINES_PER_SECOND;
-    println!("{} or {} lines", seconds, lines);
-
-    let mut img = image::ImageBuffer::new(PIXELS_PER_LINE, lines);
-
-
-
-    let samples = float_sample_iterator(&mut reader);
-
-    let coeffs = vec![ -7.383784e-03,
+const LOWPASS_COEFFS : [f32; 63] = [ -7.383784e-03,
         -3.183046e-03,
         2.255039e-03,
         7.461166e-03,
@@ -113,6 +83,32 @@ fn main() {
         -3.183046e-03,
         -7.383784e-03];
 
+fn main() {
+    let mut reader = match hound::WavReader::open("noaa19_20160814_mono.wav") {
+        Err(e) => panic!("Could not open inputfile: {}", e),
+        Ok(r) => r
+    };
+
+    if reader.spec().channels != 1 {
+        panic!("Expected a mono file");
+    }
+
+    let sample_rate = reader.spec().sample_rate;
+    println!("Samplerate: {}", sample_rate);
+    if sample_rate != 48000 {
+        panic!("Expected a 48kHz sample rate");
+    }
+
+    let sample_count = reader.len();
+    let seconds = (sample_count as f32) / (sample_rate as f32);
+    let lines = (seconds.ceil() as u32) * LINES_PER_SECOND;
+    println!("File contains {} seconds or {} lines", seconds, lines);
+
+    let mut img = image::ImageBuffer::new(PIXELS_PER_LINE, lines);
+
+    let coeffs = &LOWPASS_COEFFS;
+
+    let samples = float_sample_iterator(&mut reader);
 
     let demod = SquaringAMDemodulator::from(samples);
     let filter = FIRFilter::from(demod, coeffs);

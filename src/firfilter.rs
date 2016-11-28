@@ -1,12 +1,12 @@
 pub struct FIRFilter<'a> {
-    coeffs: Vec<f32>,
+    coeffs: &'a [f32],
     state: Vec<f32>,
     pos: usize,
     iterator: Box<Iterator<Item=f32> + 'a>
 }
 
 impl<'a> FIRFilter<'a> {
-    pub fn from<I>(iterator: I, coeffs: Vec<f32>) -> FIRFilter<'a> where I: Iterator<Item=f32> + 'a {
+    pub fn from<I>(iterator: I, coeffs: &'a [f32]) -> FIRFilter<'a> where I: Iterator<Item=f32> + 'a {
         let mut state = Vec::new();
         for _ in 0..coeffs.len() {
             state.push(0.0);
