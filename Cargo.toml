@@ -1,7 +1,7 @@
 [package]
 name = "apt-decoder"
 version = "0.1.0"
-authors = ["LongHairedHacker <sebastian@sebastians-site.de>"]
+authors = ["Sebastian <sebastian@sebastians-site.de>"]
 
 [dependencies]
 hound = "*"
