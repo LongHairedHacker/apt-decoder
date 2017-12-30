@@ -85,6 +85,8 @@ fn main() {
     let mut progress = 0;
     let step = sample_count * 13 / 150 / 10;
 
+    let mut last_sync = 0;
+
     print!("0%");
     std::io::stdout().flush().unwrap();
     for synced_sample in syncer {
@@ -95,14 +97,17 @@ fn main() {
             std::io::stdout().flush().unwrap();
         }
 
-
         let sample = match synced_sample {
             SyncedSample::Sample(s) => s,
             SyncedSample::SyncA(s) =>{
+                println!(" [Sync A {}]", progress - last_sync);
+                last_sync = progress;
                 x = 0;
                 s
             }
             SyncedSample::SyncB(s) =>{
+                println!(" [Sync B {}]", progress - last_sync);
+                last_sync = progress;
                 x = PIXELS_PER_LINE / 2;
                 s
             }
@@ -127,7 +132,7 @@ fn main() {
         Err(e) => panic!("Could not open outputfile: {}", e),
         Ok(f) => f
     };
-    
+
     image::ImageLuma8(img).save(fout, image::PNG).unwrap();
 
     println!("Done !");

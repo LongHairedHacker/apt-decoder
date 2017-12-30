@@ -32,6 +32,7 @@ pub struct APTSyncer<'a> {
     pos : usize,
     nones_read: usize,
     max_level : f32,
+    min_level: f32,
     iterator: Box<Iterator<Item=f32> + 'a>
 }
 
@@ -39,11 +40,13 @@ impl<'a> APTSyncer<'a> {
     pub fn from<I>(mut iterator: I) -> APTSyncer<'a> where I: Iterator<Item=f32> + 'a {
         let mut state = [0.0; SYNC_LENGHT];
         let mut max_level = 0.0;
+        let mut min_level = 1.0;
         for i in 0..SYNC_LENGHT {
             match iterator.next() {
                 Some(x) => {
                                 state[i] = x;
-                                max_level = f32::max(x, max_level);
+                                max_level = 0.25 * x + max_level * 0.75;
+                                min_level = 0.25 * x + min_level * 0.75;
                             },
                 None => panic!("Could not retrieve enough samples to prime syncer")
             }
@@ -54,25 +57,33 @@ impl<'a> APTSyncer<'a> {
             pos: 0,
             nones_read: 0,
             max_level: max_level,
+            min_level: min_level,
             iterator: Box::new(iterator)
         }
     }
 
     fn is_marker(&mut self) -> (bool, bool) {
-        let mut is_a = true;
-        let mut is_b = true;
+        let mut count_a = 0;
+        let mut count_b = 0;
+
         for i in 0..SYNC_LENGHT {
             let sync_pos = (self.pos + i) % SYNC_LENGHT;
-            let sample = self.state[sync_pos] / self.max_level;
-            is_a = is_a && ((sample > 0.5 && SYNCA_SEQ[i]) || (sample <= 0.5 && !SYNCA_SEQ[i]));
-            is_b = is_b && ((sample > 0.5 && SYNCB_SEQ[i]) || (sample <= 0.5 && !SYNCB_SEQ[i]));
+            let sample = (self.state[sync_pos] - self.min_level) / (self.max_level - self.min_level);
+            if (sample > 0.5 && SYNCA_SEQ[i]) || (sample <= 0.5 && !SYNCA_SEQ[i]) {
+                count_a += 1;
+            }
+            if (sample > 0.5 && SYNCB_SEQ[i]) || (sample <= 0.5 && !SYNCB_SEQ[i]) {
+                count_b += 1;
+            }
 
-            if !is_a && !is_b {
+            /*
+            if !count_a && !count_b {
                 break;
             }
+            */
         }
 
-        return (is_a, is_b);
+        return (count_a > 35, count_b > 35);
     }
 }
 
@@ -87,7 +98,8 @@ impl<'a> Iterator for APTSyncer<'a> {
         match self.iterator.next() {
             Some(x) => {
                             self.state[self.pos] = x;
-                            self.max_level = f32::max(x, self.max_level);
+                            self.max_level = 0.25 * x + self.max_level * 0.75;
+                            self.min_level = 0.25 * x + self.min_level * 0.75;
                         },
             None => self.nones_read += 1
         };
