@@ -85,7 +85,7 @@ fn main() {
     let mut progress = 0;
     let step = sample_count * 13 / 150 / 10;
 
-    let mut last_sync = 0;
+    let mut previous_sample = 0.0;
 
     print!("0%");
     std::io::stdout().flush().unwrap();
@@ -100,14 +100,18 @@ fn main() {
         let sample = match synced_sample {
             SyncedSample::Sample(s) => s,
             SyncedSample::SyncA(s) =>{
-                println!(" [Sync A {}]", progress - last_sync);
-                last_sync = progress;
                 x = 0;
                 s
             }
             SyncedSample::SyncB(s) =>{
-                println!(" [Sync B {}]", progress - last_sync);
-                last_sync = progress;
+                if x < (PIXELS_PER_LINE / 2) {
+                    let skip_distance = (PIXELS_PER_LINE / 2) - x;
+                    let color = (previous_sample / max_level * 255.0) as u8;
+                    for i in 0..skip_distance {
+                        img.put_pixel(x + i,y,image::Luma([color]));
+                    }
+                }
+
                 x = PIXELS_PER_LINE / 2;
                 s
             }
@@ -125,6 +129,8 @@ fn main() {
             x = 0;
             y += 1;
         }
+
+        previous_sample = sample;
     }
     println!("");
 
