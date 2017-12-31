@@ -31,22 +31,19 @@ pub struct APTSyncer<'a> {
     state: [f32; SYNC_LENGHT],
     pos : usize,
     nones_read: usize,
-    max_level : f32,
-    min_level: f32,
+    avg_level : f32,
     iterator: Box<Iterator<Item=f32> + 'a>
 }
 
 impl<'a> APTSyncer<'a> {
     pub fn from<I>(mut iterator: I) -> APTSyncer<'a> where I: Iterator<Item=f32> + 'a {
         let mut state = [0.0; SYNC_LENGHT];
-        let mut max_level = 0.0;
-        let mut min_level = 1.0;
+        let mut avg_level = 0.5;
         for i in 0..SYNC_LENGHT {
             match iterator.next() {
                 Some(x) => {
                                 state[i] = x;
-                                max_level = 0.25 * x + max_level * 0.75;
-                                min_level = 0.25 * x + min_level * 0.75;
+                                avg_level = 0.25 * x + avg_level * 0.75;
                             },
                 None => panic!("Could not retrieve enough samples to prime syncer")
             }
@@ -56,8 +53,7 @@ impl<'a> APTSyncer<'a> {
             state: state,
             pos: 0,
             nones_read: 0,
-            max_level: max_level,
-            min_level: min_level,
+            avg_level: avg_level,
             iterator: Box::new(iterator)
         }
     }
@@ -68,7 +64,7 @@ impl<'a> APTSyncer<'a> {
 
         for i in 0..SYNC_LENGHT {
             let sync_pos = (self.pos + i) % SYNC_LENGHT;
-            let sample = (self.state[sync_pos] - self.min_level) / (self.max_level - self.min_level);
+            let sample = self.state[sync_pos] / (self.avg_level * 2.0);
             if (sample > 0.5 && SYNCA_SEQ[i]) || (sample <= 0.5 && !SYNCA_SEQ[i]) {
                 count_a += 1;
             }
@@ -98,8 +94,7 @@ impl<'a> Iterator for APTSyncer<'a> {
         match self.iterator.next() {
             Some(x) => {
                             self.state[self.pos] = x;
-                            self.max_level = 0.25 * x + self.max_level * 0.75;
-                            self.min_level = 0.25 * x + self.min_level * 0.75;
+                            self.avg_level = 0.25 * x + self.avg_level * 0.75;
                         },
             None => self.nones_read += 1
         };
