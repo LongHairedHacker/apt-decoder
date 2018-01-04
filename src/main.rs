@@ -81,6 +81,7 @@ fn main() {
     let mut x = 0;
     let mut y = 0;
     let mut max_level = 0.0;
+    let mut has_sync = false;
 
     let mut progress = 0;
     let step = sample_count * 13 / 150 / 10;
@@ -100,6 +101,10 @@ fn main() {
         let sample = match synced_sample {
             SyncedSample::Sample(s) => s,
             SyncedSample::SyncA(s) =>{
+                if !has_sync {
+                    max_level = 0.0;
+                    has_sync = true;
+                }
                 x = 0;
                 s
             }
@@ -111,7 +116,10 @@ fn main() {
                         img.put_pixel(x + i,y,image::Luma([color]));
                     }
                 }
-
+                if !has_sync {
+                    max_level = 0.0;
+                    has_sync = true;
+                }
                 x = PIXELS_PER_LINE / 2;
                 s
             }
