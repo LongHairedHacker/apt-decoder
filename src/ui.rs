@@ -137,14 +137,11 @@ impl epi::App for DecoderApp {
                                 let mut state = decoding_state.lock().unwrap();
 
                                 state.progress = progress;
-                                //state.image = Some(image);
 
-                                let image = image::DynamicImage::ImageLuma8(image);
                                 let size = [image.width() as _, image.height() as _];
-                                let pixels = image.into_rgba8();
                                 let epi_img = epi::Image::from_rgba_unmultiplied(
                                     size,
-                                    pixels.as_flat_samples().as_slice(),
+                                    image.as_flat_samples().as_slice(),
                                 );
                                 let size = egui::Vec2::new(size[0] as f32, size[1] as f32);
 

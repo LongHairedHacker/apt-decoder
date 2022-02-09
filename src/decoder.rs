@@ -81,7 +81,7 @@ const LOWPASS_COEFFS: [f32; 63] = [
 
 pub fn decode<T>(input_file: &str, output_file: &str, progress_update: T) -> Result<(), String>
 where
-    T: Fn(f32, image::GrayImage) -> bool,
+    T: Fn(f32, image::RgbaImage) -> bool,
 {
     let mut reader = hound::WavReader::open(input_file)
         .map_err(|err| format!("Could not open inputfile: {}", err))?;
@@ -101,7 +101,7 @@ where
     let lines = (seconds.ceil() as u32) * LINES_PER_SECOND;
     println!("File contains {} seconds or {} lines", seconds, lines);
 
-    let mut img = image::ImageBuffer::new(PIXELS_PER_LINE, lines);
+    let mut img = image::DynamicImage::ImageLuma8(image::ImageBuffer::new(PIXELS_PER_LINE, lines));
 
     let coeffs = &LOWPASS_COEFFS;
 
@@ -148,7 +148,9 @@ where
                     let skip_distance = (PIXELS_PER_LINE / 2) - x;
                     let color = (previous_sample / max_level * 255.0) as u8;
                     for i in 0..skip_distance {
-                        img.put_pixel(x + i, y, image::Luma([color]));
+                        img.as_mut_luma8()
+                            .unwrap()
+                            .put_pixel(x + i, y, image::Luma([color]));
                     }
                 }
                 if !has_sync {
@@ -164,7 +166,9 @@ where
         let color = (sample / max_level * 255.0) as u8;
 
         if y < lines {
-            img.put_pixel(x, y, image::Luma([color]));
+            img.as_mut_luma8()
+                .unwrap()
+                .put_pixel(x, y, image::Luma([color]));
         }
 
         x += 1;
@@ -175,15 +179,15 @@ where
 
         previous_sample = sample;
 
-        if progress % PIXELS_PER_LINE == 0 {
-            if !progress_update((progress as f32) / (step * 10) as f32, img.clone()) {
+        if progress % (PIXELS_PER_LINE * 4)== 0 {
+            if !progress_update((progress as f32) / (step * 10) as f32, img.to_rgba8()) {
                 return Ok(());
             }
         }
     }
     println!("");
 
-    progress_update(1.0, img.clone());
+    progress_update(1.0, img.to_rgba8());
 
     img.save_with_format(&Path::new(output_file), image::ImageFormat::Png)
         .map_err(|err| format!("Could not save outputfile: {}", err))?;
