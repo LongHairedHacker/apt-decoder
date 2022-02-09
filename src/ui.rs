@@ -17,7 +17,7 @@ enum DecoderRunState {
 
 struct DecoderJobState {
     progress: f32,
-    image: Option<image::GrayImage>,
+    texture: Option<(egui::TextureId, egui::Vec2)>,
     run_state: DecoderRunState,
 }
 
@@ -31,7 +31,7 @@ impl Default for DecoderJobState {
     fn default() -> Self {
         Self {
             progress: 0.0,
-            image: None,
+            texture: None,
             run_state: DecoderRunState::DONE,
         }
     }
@@ -41,7 +41,6 @@ pub struct DecoderApp {
     input_path: String,
     output_path: String,
     decoding_state: Arc<Mutex<DecoderJobState>>,
-    texture: Option<(egui::TextureId, egui::Vec2)>,
 }
 
 impl Default for DecoderApp {
@@ -51,7 +50,6 @@ impl Default for DecoderApp {
             input_path: "input.wav".to_owned(),
             output_path: "output.png".to_owned(),
             decoding_state: Arc::new(Mutex::new(DecoderJobState::default())),
-            texture: None,
         }
     }
 }
@@ -77,7 +75,6 @@ impl epi::App for DecoderApp {
             input_path,
             output_path,
             decoding_state,
-            texture,
         } = self;
 
         {
@@ -140,7 +137,22 @@ impl epi::App for DecoderApp {
                                 let mut state = decoding_state.lock().unwrap();
 
                                 state.progress = progress;
-                                state.image = Some(image);
+                                //state.image = Some(image);
+
+                                let image = image::DynamicImage::ImageLuma8(image);
+                                let size = [image.width() as _, image.height() as _];
+                                let pixels = image.into_rgba8();
+                                let epi_img = epi::Image::from_rgba_unmultiplied(
+                                    size,
+                                    pixels.as_flat_samples().as_slice(),
+                                );
+                                let size = egui::Vec2::new(size[0] as f32, size[1] as f32);
+
+                                if let Some((old_texture, _)) = state.texture {
+                                    frame.free_texture(old_texture);
+                                }
+
+                                state.texture = Some((frame.alloc_texture(epi_img), size));
 
                                 frame.request_repaint();
 
@@ -168,27 +180,8 @@ impl epi::App for DecoderApp {
 
                 ui.separator();
 
-                if let Some(image) = state.image.take() {
-                    let image = image::DynamicImage::ImageLuma8(image);
-                    let size = [image.width() as _, image.height() as _];
-                    let pixels = image.into_rgba8();
-                    let epi_img = epi::Image::from_rgba_unmultiplied(
-                        size,
-                        pixels.as_flat_samples().as_slice(),
-                    );
-                    let size = egui::Vec2::new(size[0] as f32, size[1] as f32);
-
-                    if let Some((old_texture, _)) = texture {
-                        frame.free_texture(*old_texture);
-                    }
-
-                    *texture = Some((frame.alloc_texture(epi_img), size));
-
-                    state.image = None;
-                }
-
-                if let Some((texture, size)) = texture {
-                    ui.image(*texture, *size);
+                if let Some((texture, size)) = state.texture {
+                    ui.image(texture, size);
                 }
             });
         }

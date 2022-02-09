@@ -175,7 +175,7 @@ where
 
         previous_sample = sample;
 
-        if progress % LINES_PER_SECOND == 0 {
+        if progress % PIXELS_PER_LINE == 0 {
             if !progress_update((progress as f32) / (step * 10) as f32, img.clone()) {
                 return Ok(());
             }
