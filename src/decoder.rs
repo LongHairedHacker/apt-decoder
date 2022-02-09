@@ -175,11 +175,15 @@ where
 
         previous_sample = sample;
 
-        if !progress_update((progress as f32) / (step * 10) as f32, img.clone()) {
-            return Ok(());
+        if progress % LINES_PER_SECOND == 0 {
+            if !progress_update((progress as f32) / (step * 10) as f32, img.clone()) {
+                return Ok(());
+            }
         }
     }
     println!("");
+
+    progress_update(1.0, img.clone());
 
     img.save_with_format(&Path::new(output_file), image::ImageFormat::Png)
         .map_err(|err| format!("Could not save outputfile: {}", err))?;
