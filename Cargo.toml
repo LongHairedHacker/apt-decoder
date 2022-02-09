@@ -6,3 +6,5 @@ authors = ["Sebastian <sebastian@sebastians-site.de>"]
 [dependencies]
 hound = "*"
 image = "*"
+eframe = "0.16.0"
+rfd = "0.7.0"
