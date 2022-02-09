@@ -159,6 +159,8 @@ impl epi::App for DecoderApp {
 
                             let mut state = decoding_state.lock().unwrap();
                             state.run_state = DecoderRunState::DONE;
+
+                            frame.request_repaint();
                         });
                     }
                     if ui
@@ -178,7 +180,7 @@ impl epi::App for DecoderApp {
                 ui.separator();
 
                 if let Some((texture, size)) = state.texture {
-                    ui.image(texture, size);
+                    ui.image(texture, ui.available_size());
                 }
             });
         }

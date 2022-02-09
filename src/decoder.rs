@@ -179,7 +179,7 @@ where
 
         previous_sample = sample;
 
-        if progress % (PIXELS_PER_LINE * 4)== 0 {
+        if progress % (PIXELS_PER_LINE * 4) == 0 {
             if !progress_update((progress as f32) / (step * 10) as f32, img.to_rgba8()) {
                 return Ok(());
             }
