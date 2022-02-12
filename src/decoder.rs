@@ -1,8 +1,4 @@
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use std::time;
 
 use amdemod::SquaringAMDemodulator;
 use aptsyncer::{APTSyncer, SyncedSample};
@@ -81,7 +77,7 @@ const LOWPASS_COEFFS: [f32; 63] = [
 
 pub fn decode<T>(input_file: &str, output_file: &str, progress_update: T) -> Result<(), String>
 where
-    T: Fn(f32, image::RgbaImage) -> bool,
+    T: Fn(f32, image::RgbaImage) -> (bool, u32),
 {
     let mut reader = hound::WavReader::open(input_file)
         .map_err(|err| format!("Could not open inputfile: {}", err))?;
@@ -91,7 +87,6 @@ where
     }
 
     let sample_rate = reader.spec().sample_rate;
-    println!("Samplerate: {}", sample_rate);
     if sample_rate != 48000 {
         return Err("Expected a 48kHz sample rate".to_owned());
     }
@@ -99,7 +94,6 @@ where
     let sample_count = reader.len();
     let seconds = (sample_count as f32) / (sample_rate as f32);
     let lines = (seconds.ceil() as u32) * LINES_PER_SECOND;
-    println!("File contains {} seconds or {} lines", seconds, lines);
 
     let mut img = image::DynamicImage::ImageLuma8(image::ImageBuffer::new(PIXELS_PER_LINE, lines));
 
@@ -119,19 +113,13 @@ where
     let mut has_sync = false;
 
     let mut progress = 0;
-    let step = sample_count * 13 / 150 / 10;
+    let pixel_count = sample_count * 13 / 150;
+    let mut update_step = 10;
 
     let mut previous_sample = 0.0;
 
-    print!("0%");
-    std::io::stdout().flush().unwrap();
     for synced_sample in syncer {
         progress += 1;
-
-        if progress % step == 0 {
-            print!("...{}%", progress / step * 10);
-            std::io::stdout().flush().unwrap();
-        }
 
         let sample = match synced_sample {
             SyncedSample::Sample(s) => s,
@@ -179,20 +167,22 @@ where
 
         previous_sample = sample;
 
-        if progress % (PIXELS_PER_LINE * 4) == 0 {
-            if !progress_update((progress as f32) / (step * 10) as f32, img.to_rgba8()) {
+        if progress % (PIXELS_PER_LINE * update_step) == 0 {
+            let (cont, update_steps) =
+                progress_update((progress as f32) / (pixel_count as f32), img.to_rgba8());
+            if !cont {
                 return Ok(());
             }
+
+            let line_count = pixel_count / PIXELS_PER_LINE;
+            update_step = line_count / update_steps;
         }
     }
-    println!("");
 
     progress_update(1.0, img.to_rgba8());
 
     img.save_with_format(&Path::new(output_file), image::ImageFormat::Png)
         .map_err(|err| format!("Could not save outputfile: {}", err))?;
-
-    println!("Done !");
 
     Ok(())
 }

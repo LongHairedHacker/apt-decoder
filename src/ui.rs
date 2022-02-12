@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::time;
 
 use eframe::egui::text_edit::TextEdit;
 use eframe::egui::widgets::{Button, ProgressBar};
@@ -16,8 +15,9 @@ enum DecoderRunState {
 }
 
 struct DecoderJobState {
+    update_steps: u32,
     progress: f32,
-    texture: Option<(egui::TextureId, egui::Vec2)>,
+    texture: Option<egui::TextureId>,
     run_state: DecoderRunState,
 }
 
@@ -30,6 +30,7 @@ impl DecoderJobState {
 impl Default for DecoderJobState {
     fn default() -> Self {
         Self {
+            update_steps: 10,
             progress: 0.0,
             texture: None,
             run_state: DecoderRunState::DONE,
@@ -56,7 +57,7 @@ impl Default for DecoderApp {
 
 impl epi::App for DecoderApp {
     fn name(&self) -> &str {
-        "eframe template"
+        "APT Decoder"
     }
 
     /// Called once before the first frame.
@@ -143,17 +144,15 @@ impl epi::App for DecoderApp {
                                     size,
                                     image.as_flat_samples().as_slice(),
                                 );
-                                let size = egui::Vec2::new(size[0] as f32, size[1] as f32);
 
-                                if let Some((old_texture, _)) = state.texture {
+                                if let Some(old_texture) = state.texture {
                                     frame.free_texture(old_texture);
                                 }
-
-                                state.texture = Some((frame.alloc_texture(epi_img), size));
+                                state.texture = Some(frame.alloc_texture(epi_img));
 
                                 frame.request_repaint();
 
-                                return state.is_running();
+                                return (state.is_running(), state.update_steps);
                             })
                             .unwrap();
 
@@ -179,8 +178,11 @@ impl epi::App for DecoderApp {
 
                 ui.separator();
 
-                if let Some((texture, size)) = state.texture {
-                    ui.image(texture, ui.available_size());
+                let image_size = ui.available_size();
+                state.update_steps = image_size[1] as u32;
+
+                if let Some(texture) = state.texture {
+                    ui.image(texture, image_size);
                 }
             });
         }
