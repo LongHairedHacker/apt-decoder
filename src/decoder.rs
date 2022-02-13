@@ -175,7 +175,11 @@ where
             }
 
             let line_count = pixel_count / PIXELS_PER_LINE;
-            update_step = line_count / update_steps;
+            update_step = if line_count / update_steps > 4 {
+                line_count / update_steps
+            } else {
+                4
+            }
         }
     }
 
