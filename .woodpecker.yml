@@ -2,8 +2,8 @@ pipeline:
   build:
     image: rust:bullseye
     commands:
-      - apt update && apt install -y libgtk-3-dev libxcb-shape0-dev \
-            libxcb-xfixes0-dev python3-pip python3-setuptools patchelf \
+      - apt update && apt install -y libgtk-3-dev libxcb-shape0-dev
+            libxcb-xfixes0-dev python3-pip python3-setuptools patchelf
             desktop-file-utils libgdk-pixbuf2.0-dev fakeroot strace fuse
       - wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
       - chmod +x /usr/local/bin/appimagetool
