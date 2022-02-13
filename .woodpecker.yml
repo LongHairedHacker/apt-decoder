@@ -2,11 +2,33 @@ pipeline:
   build:
     image: rust:bullseye
     commands:
+        - apt update && apt install -y libgtk-3-dev libxcb-shape0-dev
+            libxcb-xfixes0-dev
+        - cargo build --release
+
+  build_appimage:
+    image: rust:bullseye
+    group: build_release_files
+    commands:
       - apt update && apt install -y libgtk-3-dev libxcb-shape0-dev
             libxcb-xfixes0-dev python3-pip python3-setuptools patchelf
             desktop-file-utils libgdk-pixbuf2.0-dev fakeroot strace fuse
-      - wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
-      - chmod +x /usr/local/bin/appimagetool
+      # Install appimage tool
+      - (cd /tmp/ &&
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage &&
+          chmod +x appimagetool-x86_64.AppImage &&
+          ./appimagetool-x86_64.AppImage --appimage-extract &&
+          cp -avr squashfs-root/usr/* /usr/)
+      - export CARGO_HOME=/root/.cargo
       - cargo install cargo-appimage
-      - cargo build
+      # Build appimage
       - cargo appimage
+
+  build_windows:
+    image: rust:bullseye
+    group: build_release_files
+    commands:
+        - apt update && apt install -y mingw-w64
+        - rustup target add x86_64-pc-windows-gnu
+        - rustup toolchain install stable-x86_64-pc-windows-gnu
+        - cargo build --target x86_64-pc-windows-gnu
