@@ -4,10 +4,12 @@ extern crate eframe;
 extern crate hound;
 extern crate image;
 extern crate rfd;
+extern crate thiserror;
 
 mod amdemod;
 mod aptsyncer;
 mod decoder;
+mod errors;
 mod firfilter;
 mod resamplers;
 mod ui;

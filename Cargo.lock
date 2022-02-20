@@ -73,6 +73,7 @@ dependencies = [
  "hound",
  "image",
  "rfd",
+ "thiserror",
 ]
 
 [[package]]

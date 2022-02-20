@@ -6,6 +6,7 @@ use eframe::egui::{Color32, RichText};
 use eframe::{egui, epi};
 
 use decoder;
+use errors::DecoderError;
 
 #[derive(PartialEq)]
 enum DecoderRunState {
@@ -19,6 +20,7 @@ struct DecoderJobState {
     progress: f32,
     texture: Option<egui::TextureId>,
     run_state: DecoderRunState,
+    error: Option<DecoderError>,
 }
 
 impl DecoderJobState {
@@ -34,6 +36,7 @@ impl Default for DecoderJobState {
             progress: 0.0,
             texture: None,
             run_state: DecoderRunState::DONE,
+            error: None,
         }
     }
 }
@@ -132,32 +135,43 @@ impl epi::App for DecoderApp {
                         let decoding_state = decoding_state.clone();
                         let input_path = input_path.clone();
                         let output_path = output_path.clone();
+
+                        state.error = None;
                         state.run_state = DecoderRunState::RUNNING;
+                        if let Some(old_texture) = state.texture {
+                            frame.free_texture(old_texture);
+                        }
+                        state.texture = None;
+
                         std::thread::spawn(move || {
-                            decoder::decode(&input_path, &output_path, |progress, image| {
-                                let mut state = decoding_state.lock().unwrap();
+                            let decoder_res =
+                                decoder::decode(&input_path, &output_path, |progress, image| {
+                                    let mut state = decoding_state.lock().unwrap();
 
-                                state.progress = progress;
+                                    state.progress = progress;
 
-                                let size = [image.width() as _, image.height() as _];
-                                let epi_img = epi::Image::from_rgba_unmultiplied(
-                                    size,
-                                    image.as_flat_samples().as_slice(),
-                                );
+                                    let size = [image.width() as _, image.height() as _];
+                                    let epi_img = epi::Image::from_rgba_unmultiplied(
+                                        size,
+                                        image.as_flat_samples().as_slice(),
+                                    );
 
-                                if let Some(old_texture) = state.texture {
-                                    frame.free_texture(old_texture);
-                                }
-                                state.texture = Some(frame.alloc_texture(epi_img));
+                                    if let Some(old_texture) = state.texture {
+                                        frame.free_texture(old_texture);
+                                    }
+                                    state.texture = Some(frame.alloc_texture(epi_img));
 
-                                frame.request_repaint();
+                                    frame.request_repaint();
 
-                                return (state.is_running(), state.update_steps);
-                            })
-                            .unwrap();
+                                    return (state.is_running(), state.update_steps);
+                                });
 
                             let mut state = decoding_state.lock().unwrap();
                             state.run_state = DecoderRunState::DONE;
+                            state.error = match decoder_res {
+                                Err(err) => Some(err),
+                                _ => None,
+                            };
 
                             frame.request_repaint();
                         });
@@ -175,6 +189,11 @@ impl epi::App for DecoderApp {
 
                 let progressbar = ProgressBar::new(state.progress).show_percentage();
                 ui.add(progressbar);
+                ui.end_row();
+
+                if let Some(err) = &state.error {
+                    ui.label(RichText::new(err.to_string()).color(Color32::RED));
+                };
 
                 ui.separator();
 

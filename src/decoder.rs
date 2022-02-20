@@ -2,6 +2,7 @@ use std::path::Path;
 
 use amdemod::SquaringAMDemodulator;
 use aptsyncer::{APTSyncer, SyncedSample};
+use errors::DecoderError;
 use firfilter::FIRFilter;
 use resamplers::{Downsampler, Upsampler};
 use utils::float_sample_iterator;
@@ -75,12 +76,16 @@ const LOWPASS_COEFFS: [f32; 63] = [
     -7.383784e-03,
 ];
 
-pub fn decode<T>(input_file: &str, output_file: &str, progress_update: T) -> Result<(), String>
+pub fn decode<T>(
+    input_file: &str,
+    output_file: &str,
+    progress_update: T,
+) -> Result<(), DecoderError>
 where
     T: Fn(f32, image::RgbaImage) -> (bool, u32),
 {
-    let mut reader = hound::WavReader::open(input_file)
-        .map_err(|err| format!("Could not open inputfile: {}", err))?;
+    let mut reader =
+        hound::WavReader::open(input_file).map_err(|err| DecoderError::InputFileError(err))?;
 
     if reader.spec().channels != 1 {
         panic!("Expected a mono file");
@@ -88,7 +93,7 @@ where
 
     let sample_rate = reader.spec().sample_rate;
     if sample_rate != 48000 {
-        return Err("Expected a 48kHz sample rate".to_owned());
+        return Err(DecoderError::UnexpectedSamplingRate(sample_rate));
     }
 
     let sample_count = reader.len();
@@ -186,7 +191,7 @@ where
     progress_update(1.0, img.to_rgba8());
 
     img.save_with_format(&Path::new(output_file), image::ImageFormat::Png)
-        .map_err(|err| format!("Could not save outputfile: {}", err))?;
+        .map_err(|err| DecoderError::OutputFileError(err))?;
 
     Ok(())
 }
