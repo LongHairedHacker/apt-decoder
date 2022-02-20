@@ -6,7 +6,7 @@ type FileReader = std::io::BufReader<std::fs::File>;
 
 pub fn float_sample_iterator<'a>(
     reader: &'a mut hound::WavReader<FileReader>,
-) -> Box<Iterator<Item = f32> + 'a> {
+) -> Box<dyn Iterator<Item = f32> + 'a> {
     match reader.spec().sample_format {
         hound::SampleFormat::Float => Box::new(reader.samples::<f32>().map(|x| x.unwrap())),
         hound::SampleFormat::Int => match reader.spec().bits_per_sample {

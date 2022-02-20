@@ -12,7 +12,4 @@ pub enum DecoderError {
 
     #[error("Unable to write output file: {0}")]
     OutputFileError(#[from] image::ImageError),
-
-    #[error("FIXME: Unknown decoder error")]
-    Unknown,
 }
