@@ -1,6 +1,6 @@
 [package]
 name = "apt-decoder"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Sebastian <sebastian@sebastians-site.de>"]
 
 [dependencies]
