@@ -23,39 +23,29 @@ pipeline:
       - cargo install cargo-appimage --version 1.4.0
       # Build appimage
       - cargo appimage
-
-  build_appimage_cli:
-    image: rust:bullseye
-    group: build_release_files
-    commands:
-      - apt update && apt install -y libgtk-3-dev libxcb-shape0-dev
-            libxcb-xfixes0-dev python3-pip python3-setuptools patchelf
-            desktop-file-utils libgdk-pixbuf2.0-dev fakeroot strace fuse
-      # Install appimage tool
-      - (cd /tmp/ &&
-          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage &&
-          chmod +x appimagetool-x86_64.AppImage &&
-          ./appimagetool-x86_64.AppImage --appimage-extract &&
-          cp -avr squashfs-root/usr/* /usr/)
-      - export CARGO_HOME=/root/.cargo
-      - cargo install cargo-appimage --version 1.4.0
-      # Build appimage
-      - cargo appimage --no-default-features
+      - mkdir -p release
+      - cp *.AppImage release/
 
   build_windows:
     image: rust:bullseye
     group: build_release_files
     commands:
-        - apt update && apt install -y mingw-w64
+        - apt update && apt install -y mingw-w64 zip
         - rustup target add x86_64-pc-windows-gnu
         - rustup toolchain install stable-x86_64-pc-windows-gnu
-        - cargo build --target x86_64-pc-windows-gnu
+        - cargo build --target x86_64-pc-windows-gnu --release
+        - mkdir -p release
+        - cp target/x86_64-pc-windows-gnu/release/apt-decoder.exe release/
+        - cd release && zip apt-decoder-win.zip apt-decoder.exe && rm apt-decoder.exe
 
-  build_windows_cli:
-    image: rust:bullseye
-    group: build_release_files
-    commands:
-        - apt update && apt install -y mingw-w64
-        - rustup target add x86_64-pc-windows-gnu
-        - rustup toolchain install stable-x86_64-pc-windows-gnu
-        - cargo build --target x86_64-pc-windows-gnu --no-default-features
+  release:
+    image: plugins/gitea-release
+    settings:
+      files: release/*
+      api_key:
+        from_secret: api_key
+      base_url:
+        from_secret: base_url
+    secrets: [api_key, base_url]
+    when:
+      event: tag
