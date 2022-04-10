@@ -9,6 +9,11 @@ apt-decoder provides a lightweight, simple to use and easy to understand solutio
 
 ![short sample](noaa19_short.png)
 
+Releases
+--------
+You can download the latest release as a standalone binary,
+for linux (appimage) and windows (just a statically linked exe file) under
+https://gitea.zenerdio.de/sebastian/apt-decoder/releases
 
 Building
 --------
