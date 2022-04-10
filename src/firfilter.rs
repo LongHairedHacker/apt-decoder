@@ -16,8 +16,8 @@ impl<'a> FIRFilter<'a> {
         }
 
         FIRFilter {
-            coeffs: coeffs,
-            state: state,
+            coeffs,
+            state,
             pos: 0,
             iterator: Box::new(iterator),
         }

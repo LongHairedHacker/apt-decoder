@@ -47,12 +47,11 @@ pub struct DecoderApp {
     decoding_state: Arc<Mutex<DecoderJobState>>,
 }
 
-impl Default for DecoderApp {
-    fn default() -> Self {
+impl DecoderApp {
+    pub fn new(input_path: &str, output_path: &str) -> Self {
         Self {
-            // Example stuff:
-            input_path: "input.wav".to_owned(),
-            output_path: "output.png".to_owned(),
+            input_path: input_path.to_owned(),
+            output_path: output_path.to_owned(),
             decoding_state: Arc::new(Mutex::new(DecoderJobState::default())),
         }
     }

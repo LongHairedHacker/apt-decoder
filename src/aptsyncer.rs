@@ -48,10 +48,10 @@ impl<'a> APTSyncer<'a> {
         }
 
         APTSyncer {
-            state: state,
+            state,
             pos: 0,
             nones_read: 0,
-            avg_level: avg_level,
+            avg_level,
             iterator: Box::new(iterator),
         }
     }
