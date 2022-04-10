@@ -12,24 +12,36 @@ apt-decoder provides a lightweight, simple to use and easy to understand solutio
 
 Building
 --------
-1. Install the rust compiler and cargo.
-    E.g. using rustup (Try installing rustup using yourpackage manager,
-    don't use the stupid **curl | sh** stuff.)
-2. Run `cargo build --release`
-3. The `apt-decoder` binary is in `target/release`
-4. Done
+1. Install the development packages for `libgtk3` and `libxcb` for your distro.
+  E.g. for anything Debian based:
+  `sudo apt install libgtk-3-dev libxcb-shape0-dev libxcb-xfixes0-dev`
+2. Install the rust compiler and cargo.
+    E.g. using rustup (Try installing rustup using your package manager,
+    don't use the stupid `curl | sh` stuff.)
+3. Run `cargo build --release`
+4. The `apt-decoder` binary is in `target/release`
+5. Done
 
+The default build will build a binary that contains,
+both the GUI and the CLI version of the tool.
+If you need something more lightweight (with no external dependencies),
+it is also possible to build a pure-rust CLI-only version,
+using `cargo build --release --no-default-features`.
 
 Usage
 -----
 1. Save a received and FM-demodulated satellite signal as WAV-file.
     The WAV file has to be **mono**, **48kHz** and **32bit float**.
     When in doubt you can use audacity to convert your file into this format.
-2. Run `apt-decoder <your WAV file> <destination PNG file>`
-    You can also run the example contained in this repo:
-    `apt-decoder noaa19_short.wav noaa19_short.png`
+2. To run `apt-decoder` in GUI mode just execute the binary.
+   For CLI mode use the `-n` flag:
+   `apt-decoder -n <your WAV file> <destination PNG file>`
+   For testing you can try the example contained in this repo:
+   `apt-decoder -n noaa19_short.wav noaa19_short.png`
 3. Look at the generated PNG file, adjust the dynamic and contrast with your favorite tool.
 4. Done
+
+![gui example](gui.png)
 
 ![long sample](example.png)
 
