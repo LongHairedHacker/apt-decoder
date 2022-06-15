@@ -1,9 +1,11 @@
 use std::sync::{Arc, Mutex};
 
+use eframe::egui;
 use eframe::egui::text_edit::TextEdit;
 use eframe::egui::widgets::{Button, ProgressBar};
+use eframe::egui::ColorImage;
+use eframe::egui::Visuals;
 use eframe::egui::{Color32, RichText};
-use eframe::{egui, epi};
 
 use decoder;
 use errors::DecoderError;
@@ -18,7 +20,7 @@ enum DecoderRunState {
 struct DecoderJobState {
     update_steps: u32,
     progress: f32,
-    texture: Option<egui::TextureId>,
+    texture: Option<egui::TextureHandle>,
     run_state: DecoderRunState,
     error: Option<DecoderError>,
 }
@@ -57,23 +59,10 @@ impl DecoderApp {
     }
 }
 
-impl epi::App for DecoderApp {
-    fn name(&self) -> &str {
-        "APT Decoder"
-    }
-
-    /// Called once before the first frame.
-    fn setup(
-        &mut self,
-        _ctx: &egui::CtxRef,
-        _frame: &epi::Frame,
-        _storage: Option<&dyn epi::Storage>,
-    ) {
-    }
-
+impl eframe::App for DecoderApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let Self {
             input_path,
             output_path,
@@ -89,6 +78,7 @@ impl epi::App for DecoderApp {
                 }
             }
 
+            ctx.set_visuals(Visuals::dark());
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.heading("APT-Decoder");
 
@@ -130,16 +120,13 @@ impl epi::App for DecoderApp {
                         .add_enabled(!state.is_running(), Button::new("Decode"))
                         .clicked()
                     {
-                        let frame = frame.clone();
+                        let ctx = ctx.clone();
                         let decoding_state = decoding_state.clone();
                         let input_path = input_path.clone();
                         let output_path = output_path.clone();
 
                         state.error = None;
                         state.run_state = DecoderRunState::RUNNING;
-                        if let Some(old_texture) = state.texture {
-                            frame.free_texture(old_texture);
-                        }
                         state.texture = None;
 
                         std::thread::spawn(move || {
@@ -150,17 +137,15 @@ impl epi::App for DecoderApp {
                                     state.progress = progress;
 
                                     let size = [image.width() as _, image.height() as _];
-                                    let epi_img = epi::Image::from_rgba_unmultiplied(
+                                    let color_img = ColorImage::from_rgba_unmultiplied(
                                         size,
                                         image.as_flat_samples().as_slice(),
                                     );
 
-                                    if let Some(old_texture) = state.texture {
-                                        frame.free_texture(old_texture);
-                                    }
-                                    state.texture = Some(frame.alloc_texture(epi_img));
+                                    state.texture =
+                                        Some(ctx.load_texture("decoded-image", color_img));
 
-                                    frame.request_repaint();
+                                    ctx.request_repaint();
 
                                     return (state.is_running(), state.update_steps);
                                 });
@@ -172,7 +157,7 @@ impl epi::App for DecoderApp {
                                 _ => None,
                             };
 
-                            frame.request_repaint();
+                            ctx.request_repaint();
                         });
                     }
                     if ui
@@ -199,7 +184,7 @@ impl epi::App for DecoderApp {
                 let image_size = ui.available_size();
                 state.update_steps = image_size[1] as u32;
 
-                if let Some(texture) = state.texture {
+                if let Some(texture) = &state.texture {
                     ui.image(texture, image_size);
                 }
             });
