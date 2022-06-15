@@ -58,7 +58,7 @@ checksum = "000444226fcff248f2bc4c7625be32c63caccfecc2723a2b9f78a7487a49c407"
 
 [[package]]
 name = "apt-decoder"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "clap",
  "eframe",
