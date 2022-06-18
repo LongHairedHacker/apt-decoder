@@ -76,18 +76,24 @@ fn main() {
         .value_of_os("wavfile")
         .expect("No input file given")
         .to_str()
-        .unwrap();
+        .unwrap()
+        .to_string();
     let output_file = matches
         .value_of_os("pngfile")
         .expect("No output file given")
         .to_str()
-        .unwrap();
+        .unwrap()
+        .to_string();
 
     if matches.is_present("nogui") {
-        cli::decode(input_file, output_file);
+        cli::decode(&input_file, &output_file);
     } else {
-        let app = DecoderApp::new(input_file, output_file);
         let native_options = eframe::NativeOptions::default();
-        eframe::run_native(Box::new(app), native_options);
+
+        eframe::run_native(
+            "APT-Decoder",
+            native_options,
+            Box::new(move |_cc| Box::new(DecoderApp::new(&input_file, &output_file))),
+        );
     }
 }

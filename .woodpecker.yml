@@ -1,4 +1,9 @@
 pipeline:
+  audit:
+    image: dbrgn/cargo-audit
+    commands:
+        - cargo audit
+
   build:
     image: sebastian/apt-decoder-ci
     commands:

@@ -1,6 +1,6 @@
 [package]
 name = "apt-decoder"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Sebastian <sebastian@sebastians-site.de>"]
 
 [dependencies]
@@ -8,7 +8,7 @@ clap = {version = "3.1.8", features = ["cargo"]}
 indicatif = "0.16.2"
 hound = "3.4.0"
 image = "0.24.0"
-eframe = {version = "0.16.0", optional = true}
+eframe = {version = "0.18.0", optional = true}
 rfd = "0.7.0"
 thiserror = "1.0.30"
 
