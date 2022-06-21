@@ -7,21 +7,27 @@ pipeline:
   build:
     image: sebastian/apt-decoder-ci
     commands:
+        - export CARGO_HOME=/root/.cargo
         - cargo build --release
+        - mkdir -p ./cargo-home-cache
+        - cp -ar $CARGO_HOME/* ./cargo-home-cache
 
   build_appimage:
     image: sebastian/apt-decoder-ci
     group: build_release_files
     commands:
-      - export CARGO_HOME=/root/.cargo
-      - cargo appimage
-      - mkdir -p release
-      - cp *.AppImage release/
+        - export CARGO_HOME=/root/.cargo
+        - cp -ar ./cargo-home-cache/* $CARGO_HOME/
+        - cargo appimage
+        - mkdir -p release
+        - cp *.AppImage release/
 
   build_windows:
     image: sebastian/apt-decoder-ci
     group: build_release_files
     commands:
+        - export CARGO_HOME=/root/.cargo
+        - cp -ar ./cargo-home-cache/* $CARGO_HOME/
         - cargo build --target x86_64-pc-windows-gnu --release
         - mkdir -p release
         - cp target/x86_64-pc-windows-gnu/release/apt-decoder.exe release/
