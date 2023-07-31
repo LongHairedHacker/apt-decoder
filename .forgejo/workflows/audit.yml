@@ -1,0 +1,9 @@
+on: [push]
+jobs:
+  audit:
+    runs-on: docker
+    container:
+      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.1.0
+    steps:
+      - uses: actions/checkout@v3
+      - run: export CARGO_HOME=/root/.cargo && cargo audit
