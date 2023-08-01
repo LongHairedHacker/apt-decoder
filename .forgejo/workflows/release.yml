@@ -1,0 +1,31 @@
+on:
+  push:
+    tags: 'v*'
+
+jobs:
+  publish-release:
+    runs-on: docker
+    container:
+      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.2.1
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/      
+          key: build-apt-decoder
+      - run: CARGO_HOME=~/.cargo cargo build --target x86_64-pc-windows-gnu --release
+      - run: CARGO_HOME=~/.cargo PATH=$PATH:$CARGO_HOME/bin x build -r --format appimage
+      - run: mkdir -p release
+      - run: cp target/x/release/linux/x64/apt-decoder.AppImage release/apt-decoder-${{ github.ref_name }}.AppImage
+      - run: cp target/x86_64-pc-windows-gnu/release/apt-decoder.exe release/
+      - run: cd release && zip apt-decoder-win.zip apt-decoder.exe && rm apt-decoder.exe
+      - uses: actions/forgejo-release@v1
+        with:
+          direction: upload
+          release-dir: release
+          token: ${{ secrets.FORGEJO_RELEASE }}
