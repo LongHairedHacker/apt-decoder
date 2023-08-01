@@ -6,4 +6,13 @@ jobs:
       image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.1.0
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/      
+          key: ${{ runner.os }}-apt-decoder-cargo
       - run: export CARGO_HOME=/root/.cargo && cargo audit

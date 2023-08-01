@@ -1,0 +1,52 @@
+on: [push]
+jobs:
+  build:
+    runs-on: docker
+    container:
+      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.1.0
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/      
+          key: ${{ runner.os }}-apt-decoder-cargo
+      - run: export CARGO_HOME=~/.cargo && cargo build --release
+
+  build-windows:
+    runs-on: docker
+    container:
+      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.1.0
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/      
+          key: ${{ runner.os }}-apt-decoder-cargo
+      - run: export CARGO_HOME=~/.cargo && cargo build --target x86_64-pc-windows-gnu --release
+
+  build-appimage:
+    runs-on: docker
+    container:
+      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.1.0
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/      
+          key: ${{ runner.os }}-apt-decoder-cargo
+      - run: export CARGO_HOME=~/.cargo && cargo appimage
