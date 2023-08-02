@@ -24,30 +24,19 @@ use clap::{arg, command};
 #[cfg(not(feature = "ui"))]
 fn main() {
     let matches = command!()
-        .arg(
-            arg!([wavfile] "Input wav file with 48kHz samplingrate")
-                .required(true)
-                .allow_invalid_utf8(true),
-        )
-        .arg(
-            arg!([pngfile] "Output png file")
-                .default_value("output.png")
-                .allow_invalid_utf8(true),
-        )
+        .arg(arg!([wavfile] "Input wav file with 48kHz samplingrate").required(true))
+        .arg(arg!([pngfile] "Output png file").default_value("output.png"))
         .get_matches();
 
     let input_file = matches
-        .value_of_os("wavfile")
-        .expect("No input file given")
-        .to_str()
-        .unwrap();
-    let output_file = matches
-        .value_of_os("pngfile")
-        .expect("No output file given")
-        .to_str()
-        .unwrap();
+        .get_one::<String>("wavfile")
+        .expect("No input file given");
 
-    cli::decode(input_file, output_file);
+    let output_file = matches
+        .get_one::<String>("pngfile")
+        .expect("No output file given");
+
+    cli::decode(&input_file, &output_file);
 }
 
 #[cfg(feature = "ui")]
@@ -59,33 +48,21 @@ use ui::DecoderApp;
 #[cfg(feature = "ui")]
 fn main() {
     let matches = command!()
-        .arg(
-            arg!([wavfile] "Input wav file with 48kHz samplingrate")
-                .default_value("input.wav")
-                .allow_invalid_utf8(true),
-        )
-        .arg(
-            arg!([pngfile] "Output png file")
-                .default_value("output.png")
-                .allow_invalid_utf8(true),
-        )
-        .arg(arg!(-n --nogui ... "Disable gui and run in command line mode"))
+        .arg(arg!([wavfile] "Input wav file with 48kHz samplingrate").default_value("input.wav"))
+        .arg(arg!([pngfile] "Output png file").default_value("output.png"))
+        .arg(arg!(-n --nogui "Disable gui and run in command line mode"))
         .get_matches();
 
     let input_file = matches
-        .value_of_os("wavfile")
+        .get_one::<String>("wavfile")
         .expect("No input file given")
-        .to_str()
-        .unwrap()
         .to_string();
     let output_file = matches
-        .value_of_os("pngfile")
+        .get_one::<String>("pngfile")
         .expect("No output file given")
-        .to_str()
-        .unwrap()
         .to_string();
 
-    if matches.is_present("nogui") {
+    if matches.get_flag("nogui") {
         cli::decode(&input_file, &output_file);
     } else {
         let native_options = eframe::NativeOptions::default();
