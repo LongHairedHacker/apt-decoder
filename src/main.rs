@@ -70,7 +70,8 @@ fn main() {
         eframe::run_native(
             "APT-Decoder",
             native_options,
-            Box::new(move |_cc| Box::new(DecoderApp::new(&input_file, &output_file))),
-        );
+            Box::new(move |_cc| Ok(Box::new(DecoderApp::new(&input_file, &output_file)))),
+        )
+        .unwrap();
     }
 }

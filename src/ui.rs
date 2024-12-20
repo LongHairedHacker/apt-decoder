@@ -1,10 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use eframe::egui;
 use eframe::egui::text_edit::TextEdit;
 use eframe::egui::widgets::{Button, ProgressBar};
 use eframe::egui::ColorImage;
 use eframe::egui::Visuals;
+use eframe::egui::{self, Image};
 use eframe::egui::{Color32, RichText};
 
 use decoder;
@@ -72,11 +72,13 @@ impl eframe::App for DecoderApp {
         {
             let mut state = decoding_state.lock().unwrap();
 
-            if !ctx.input().raw.dropped_files.is_empty() && !state.is_running() {
-                if let Some(path) = ctx.input().raw.dropped_files[0].clone().path {
-                    *input_path = path.display().to_string();
+            ctx.input(|input| {
+                if !input.raw.dropped_files.is_empty() && !state.is_running() {
+                    if let Some(path) = input.raw.dropped_files[0].clone().path {
+                        *input_path = path.display().to_string();
+                    }
                 }
-            }
+            });
 
             ctx.set_visuals(Visuals::dark());
             egui::CentralPanel::default().show(ctx, |ui| {
@@ -142,8 +144,11 @@ impl eframe::App for DecoderApp {
                                         image.as_flat_samples().as_slice(),
                                     );
 
-                                    state.texture =
-                                        Some(ctx.load_texture("decoded-image", color_img));
+                                    state.texture = Some(ctx.load_texture(
+                                        "decoded-image",
+                                        color_img,
+                                        Default::default(),
+                                    ));
 
                                     ctx.request_repaint();
 
@@ -185,7 +190,7 @@ impl eframe::App for DecoderApp {
                 state.update_steps = image_size[1] as u32;
 
                 if let Some(texture) = &state.texture {
-                    ui.image(texture, image_size);
+                    ui.add(Image::new(texture).shrink_to_fit());
                 }
             });
         }
