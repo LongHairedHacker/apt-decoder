@@ -3,7 +3,7 @@ jobs:
   audit:
     runs-on: docker
     container:
-      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.2.1
+      image: forgejo.zenerdio.de/sebastian/apt-decoder-ci:v0.2.2
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
